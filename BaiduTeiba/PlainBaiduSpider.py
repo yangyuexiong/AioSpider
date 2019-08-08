@@ -31,6 +31,7 @@ def main(kw, page):
         h = etree.HTML(html.text)
         list_title = h.xpath('//*[@id="thread_list"]/li/div/div//a/@href')
         new_list = list(filter(lambda x: re.findall(r'^/p/\d+', x), list_title))
+        print(len(new_list))
 
     for j in new_list:
         main_url = first_url + j
@@ -57,4 +58,4 @@ def main(kw, page):
 
 
 if __name__ == '__main__':
-    main('地下城与勇士', 3)
+    main('地下城与勇士', 5)

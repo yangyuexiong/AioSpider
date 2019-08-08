@@ -11,6 +11,7 @@ import aiohttp
 from lxml import html
 import datetime
 import re
+import threading
 
 etree = html.etree
 
@@ -21,6 +22,8 @@ q = asyncio.Queue()
 
 async def get_url(url, header=None):
     """请求url"""
+    # print('get_url thread_id', threading.get_ident())
+
     sem = asyncio.Semaphore(100)  # 并发数量限制
     # timeout = aiohttp.ClientTimeout(total=3)  # 超时
     async with sem:
@@ -34,6 +37,8 @@ async def get_url(url, header=None):
 
 async def parse(url):
     """解析每页的每篇帖子的url放入队列"""
+    # print('parse thread_id', threading.get_ident())
+
     html = await get_url(url)
     h = etree.HTML(html)
     list_title = h.xpath('//*[@id="thread_list"]/li/div/div//a/@href')
@@ -50,6 +55,8 @@ async def parse(url):
 
 async def parse2():
     """从队列中取出每篇帖子解析出 标题,内容,作者等..."""
+    # print('parse2 thread_id', threading.get_ident())
+
     if q.qsize() != 0:
         url = await q.get()
         html = await get_url(url)
@@ -91,15 +98,25 @@ async def main(kw, page):
     page:需要爬取的页数数量
 
     """
+    # print('main thread_id', threading.get_ident())
+
     start_time = datetime.datetime.now()
     print(start_time)
     print('===任务1:获取每个父页面===')
-    urls = ['https://tieba.baidu.com/f?kw={}&ie=utf-8&pn={}'.format(kw, i) for i in range(0, page * 50, 50)]
+
+    """优化前"""
+    # urls = ['https://tieba.baidu.com/f?kw={}&ie=utf-8&pn={}'.format(kw, i) for i in range(0, page * 50, 50)]
     # print(urls)
-    tasks = [asyncio.create_task(parse(url)) for url in urls]
+    # tasks = [asyncio.create_task(parse(url)) for url in urls]
+
+    """优化后"""
+    urls = [q.put_nowait('https://tieba.baidu.com/f?kw={}&ie=utf-8&pn={}'.format(kw, i)) for i in
+            range(0, page * 50, 50)]
+    tasks = [asyncio.create_task(parse(q.get_nowait())) for url in range(0, q.qsize())]
     await asyncio.wait(tasks)
     print('完成\n')
-    print('第一个总耗时{}'.format(datetime.datetime.now() - start_time))
+    # one_time = datetime.datetime.now() - start_time
+    # print('第一个总耗时{}'.format(one_time))
 
     print('===任务2:子页面每篇帖子爬取===')
     print('队列长度:{}'.format(q.qsize()))
@@ -112,4 +129,4 @@ async def main(kw, page):
 
 if __name__ == '__main__':
     pass
-    asyncio.run(main('地下城与勇士', 3))
+    asyncio.run(main('地下城与勇士', 5))

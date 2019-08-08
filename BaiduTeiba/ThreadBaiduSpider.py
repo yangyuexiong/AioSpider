@@ -6,8 +6,7 @@
 # @Software: PyCharm
 
 
-import threading, queue, time, urllib, requests, re
-from urllib import request
+import threading, queue, time, requests, re
 from lxml import html
 
 etree = html.etree
@@ -39,6 +38,7 @@ def fetchUrl(urlQueue):
         except Exception as e:
             break
         # print('线程名称 %s, Url: %s ' % (threading.currentThread().name, url))
+        # print('线程名称id %s' % (threading.get_ident()))
         try:
             html2 = requests.get(url)
             h = etree.HTML(html2.text)
@@ -62,7 +62,7 @@ def fetchUrl(urlQueue):
 
 if __name__ == '__main__':
     pass
-    main('地下城与勇士', 3)
+    main('地下城与勇士', 5)
     startTime = time.time()
     threads = []
     for i in range(0, urlQueue.qsize()):
