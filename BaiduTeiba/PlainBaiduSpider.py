@@ -10,7 +10,6 @@ import requests
 from lxml import html
 import datetime
 import re
-import random
 
 etree = html.etree
 first_url = 'https://tieba.baidu.com'
